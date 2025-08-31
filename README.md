@@ -34,6 +34,6 @@ Unfortunately, I wasn't able to come up with solution on the ball traces. My ide
 
 ## Thanks to the end
 
-I think this all in my mind at the moment. The task was really fun and I really enjoyed working on that. I'll be looking forward to your feedback. Thanks for giving me such a cool task, I really appreciate that.
+I think this all in my mind at the moment. The task was really fun and I really enjoyed working on that. I'll be looking forward to your feedback. Thanks for giving me such a cool task, I really appreciate it.
 
-Additionaly I would like to add some bonus stuff. [Check it out](https://standing-direction.surge.sh/). Clicking on the left mesh will do a little magic. It was just for fun as I wanted to explore the three.js, so please don't laugh :D
+Additionaly I would like to add some bonus stuff. [Check it out](https://standing-direction.surge.sh/) + [github repo](https://github.com/jachymjachym/make-3d). Clicking on the left mesh will do a little magic. It was just for fun as I wanted to explore the three.js, so please don't laugh :D
