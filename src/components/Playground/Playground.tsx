@@ -1,10 +1,20 @@
 import type { FC } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Bat } from "../Bat/Bat";
 import { Ball } from "../Ball/Ball";
 import { Counter } from "../Counter/Counter";
 import { LeaderBoard } from "../LeaderBoard/LeaderBoard";
 import { useLeaderBoard } from "../../hooks/useLeaderBoard";
+import { GAME_CONSTANTS } from "../../constants";
+import {
+  collidedWithLeftBat,
+  collidedWithRightBat,
+  collidedWithWall,
+  isOutOfBoundaries,
+} from "../../utils/collision";
+import { resetBallPosition } from "../../utils/ballMovement";
+import { resetBatsPosition } from "../../utils/batMovement";
+import type { BallPosition } from "../../utils/collision";
 import "./playground.css";
 
 export const Playground: FC = () => {
@@ -14,28 +24,22 @@ export const Playground: FC = () => {
 
   const { addScore } = useLeaderBoard();
 
-  const BALL_SIZE = 20;
-  const BAT_WIDTH = 20;
-  const BAT_HEIGHT = 150;
-  const BAT_INDENT = 6;
-
-  const DEFAULT_X_SPEED = 3;
-  const DEFAULT_Y_SPEED = 2;
-
   // Setting the bats in the middle of the screen on Y axis
   const leftBatYPositionRef = useRef<number>(
-    window.innerHeight / 2 - BAT_HEIGHT / 2
+    resetBatsPosition({ height: window.innerHeight }).y
   );
   const rightBatYPositionRef = useRef<number>(
-    window.innerHeight / 2 - BAT_HEIGHT / 2
+    resetBatsPosition({ height: window.innerHeight }).y
   );
 
   // Setting the ball initialy in the middel of the screen on both axis
   const ballYPositionRef = useRef<number>(
-    window.innerHeight / 2 - BALL_SIZE / 2
+    resetBallPosition({ height: window.innerHeight, width: window.innerWidth })
+      .y
   );
   const ballXPositionRef = useRef<number>(
-    window.innerWidth / 2 - BALL_SIZE / 2
+    resetBallPosition({ height: window.innerHeight, width: window.innerWidth })
+      .x
   );
 
   const playgroundRef = useRef<HTMLDivElement>(null);
@@ -48,33 +52,31 @@ export const Playground: FC = () => {
   const speedRef = useRef<number>(0);
 
   // Horizonal speed of the ball
-  const ballSpeedXRef = useRef<number>(DEFAULT_X_SPEED);
+  const ballSpeedXRef = useRef<number>(GAME_CONSTANTS.DEFAULT_X_SPEED);
   // Vertical speed of the ball
-  const ballSpeedYRef = useRef<number>(DEFAULT_Y_SPEED);
+  const ballSpeedYRef = useRef<number>(GAME_CONSTANTS.DEFAULT_Y_SPEED);
 
   // Animation frame ref for bats
   const animationFrameRef = useRef<number>(null);
   // Animation frame ref for ball
   const animationBallFrameRef = useRef<number>(null);
 
-  const moveBall = () => {
+  const moveBall = useCallback(() => {
     ballYPositionRef.current += ballSpeedYRef.current;
     ballXPositionRef.current += ballSpeedXRef.current;
 
+    const ballPosition: BallPosition = {
+      x: ballXPositionRef.current,
+      y: ballYPositionRef.current,
+    };
+
     // Bounce off top and bottom walls
-    if (
-      ballYPositionRef.current <= 0 ||
-      ballYPositionRef.current >= window.innerHeight - BALL_SIZE
-    ) {
+    if (collidedWithWall(ballPosition, window.innerHeight)) {
       ballSpeedYRef.current = -ballSpeedYRef.current;
     }
 
     // Left paddle collision detection
-    if (
-      ballXPositionRef.current <= BAT_WIDTH + BAT_INDENT && // Ball reaches left paddle area
-      ballYPositionRef.current >= leftBatYPositionRef.current && // Ball is within paddle height
-      ballYPositionRef.current <= leftBatYPositionRef.current + BAT_HEIGHT // Ball is within paddle height
-    ) {
+    if (collidedWithLeftBat(ballPosition, { y: leftBatYPositionRef.current })) {
       // Reverse ball X direction
       ballSpeedXRef.current = -ballSpeedXRef.current;
       setCount((count) => count + 1);
@@ -89,10 +91,11 @@ export const Playground: FC = () => {
 
     // Right paddle collision detection
     if (
-      ballXPositionRef.current >=
-        window.innerWidth - BAT_WIDTH - BAT_INDENT - BALL_SIZE && // Ball reaches right paddle area
-      ballYPositionRef.current >= rightBatYPositionRef.current && // Ball is within paddle height
-      ballYPositionRef.current <= rightBatYPositionRef.current + BAT_HEIGHT // Ball is within paddle height
+      collidedWithRightBat(
+        ballPosition,
+        { y: rightBatYPositionRef.current },
+        window.innerWidth
+      )
     ) {
       // Reverse ball X direction
       ballSpeedXRef.current = -ballSpeedXRef.current;
@@ -107,11 +110,7 @@ export const Playground: FC = () => {
     }
 
     // Check if ball went out of bounds (missed paddles)
-    if (
-      ballXPositionRef.current < BAT_INDENT + BAT_WIDTH - 2 ||
-      ballXPositionRef.current >
-        window.innerWidth - BAT_INDENT - BAT_WIDTH - BALL_SIZE + 2
-    ) {
+    if (isOutOfBoundaries(ballPosition, window.innerWidth)) {
       resetGame();
     }
 
@@ -122,9 +121,9 @@ export const Playground: FC = () => {
     }
 
     animationBallFrameRef.current = requestAnimationFrame(moveBall);
-  };
+  }, [count]);
 
-  const moveBats = () => {
+  const moveBats = useCallback(() => {
     // Update both bats with the same speed
     leftBatYPositionRef.current += speedRef.current;
     rightBatYPositionRef.current += speedRef.current;
@@ -132,11 +131,17 @@ export const Playground: FC = () => {
     // Clamp both positions
     leftBatYPositionRef.current = Math.max(
       0,
-      Math.min(leftBatYPositionRef.current, window.innerHeight - BAT_HEIGHT)
+      Math.min(
+        leftBatYPositionRef.current,
+        window.innerHeight - GAME_CONSTANTS.BAT_HEIGHT
+      )
     );
     rightBatYPositionRef.current = Math.max(
       0,
-      Math.min(rightBatYPositionRef.current, window.innerHeight - BAT_HEIGHT)
+      Math.min(
+        rightBatYPositionRef.current,
+        window.innerHeight - GAME_CONSTANTS.BAT_HEIGHT
+      )
     );
 
     // Apply positions to both bats
@@ -148,23 +153,28 @@ export const Playground: FC = () => {
     }
 
     animationFrameRef.current = requestAnimationFrame(moveBats);
-  };
+  }, []);
 
-  const resetGame = () => {
+  const resetGame = useCallback(() => {
     setIsGameOn(false);
     setCount(0);
 
-    ballXPositionRef.current = window.innerWidth / 2 - BALL_SIZE / 2;
-    ballYPositionRef.current = window.innerHeight / 2 - BALL_SIZE / 2;
+    const { x, y, speedX, speedY } = resetBallPosition({
+      width: window.innerWidth,
+      height: window.innerHeight,
+    });
 
-    ballSpeedXRef.current = DEFAULT_X_SPEED;
-    ballSpeedYRef.current = DEFAULT_Y_SPEED;
+    ballXPositionRef.current = x;
+    ballYPositionRef.current = y;
+    ballSpeedXRef.current = speedX;
+    ballSpeedYRef.current = speedY;
 
-    leftBatYPositionRef.current = window.innerHeight / 2 - BAT_HEIGHT / 2;
-    rightBatYPositionRef.current = window.innerHeight / 2 - BAT_HEIGHT / 2;
+    const batsPosition = resetBatsPosition({ height: window.innerHeight });
+    leftBatYPositionRef.current = batsPosition.y;
+    rightBatYPositionRef.current = batsPosition.y;
 
     addScore(playerName || "Unknown Player", count);
-  };
+  }, [addScore, playerName, count]);
 
   useEffect(() => {
     // Focus playground when game starts
@@ -173,6 +183,25 @@ export const Playground: FC = () => {
     }
   }, [isGameOn]);
 
+  const startTheGame = useCallback((e: KeyboardEvent) => {
+    if (e.key === "Enter") {
+      setIsGameOn(true);
+    }
+  }, []);
+
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (!isGameOn) return;
+      if (e.key === "ArrowUp") speedRef.current = -GAME_CONSTANTS.BAT_SPEED;
+      if (e.key === "ArrowDown") speedRef.current = GAME_CONSTANTS.BAT_SPEED;
+    },
+    [isGameOn]
+  );
+
+  const handleKeyUp = useCallback((e: KeyboardEvent) => {
+    if (e.key === "ArrowUp" || e.key === "ArrowDown") speedRef.current = 0;
+  }, []);
+
   useEffect(() => {
     // Set initial position of the ball
     if (ballRef.current) {
@@ -180,26 +209,10 @@ export const Playground: FC = () => {
       ballRef.current.style.left = `${ballXPositionRef.current}px`;
     }
 
-    const startTheGame = (e: KeyboardEvent) => {
-      if (e.key === "Enter") {
-        setIsGameOn(true);
-      }
-    };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowUp") speedRef.current = -7;
-      if (e.key === "ArrowDown") speedRef.current = 7;
-    };
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === "ArrowUp" || e.key === "ArrowDown") speedRef.current = 0;
-    };
-
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
     window.addEventListener("keypress", startTheGame);
 
-    // Start both animations
     animationFrameRef.current = requestAnimationFrame(moveBats);
 
     if (isGameOn) {
@@ -217,9 +230,7 @@ export const Playground: FC = () => {
       if (animationBallFrameRef.current)
         cancelAnimationFrame(animationBallFrameRef.current);
     };
-  }, [count, isGameOn]);
-
-  console.log("Out effect");
+  }, [count, isGameOn, startTheGame, handleKeyDown, handleKeyUp]);
 
   return (
     <div className="playground" ref={playgroundRef} tabIndex={0}>
@@ -258,18 +269,18 @@ export const Playground: FC = () => {
 
       <Bat
         ref={leftBatRef}
-        positionLeft={BAT_INDENT}
-        width={BAT_WIDTH}
-        height={BAT_HEIGHT}
+        positionLeft={GAME_CONSTANTS.BAT_INDENT}
+        width={GAME_CONSTANTS.BAT_WIDTH}
+        height={GAME_CONSTANTS.BAT_HEIGHT}
       />
       <Bat
         ref={rightBatRef}
-        positionRight={BAT_INDENT}
-        width={BAT_WIDTH}
-        height={BAT_HEIGHT}
+        positionRight={GAME_CONSTANTS.BAT_INDENT}
+        width={GAME_CONSTANTS.BAT_WIDTH}
+        height={GAME_CONSTANTS.BAT_HEIGHT}
       />
 
-      <Ball ref={ballRef} size={BALL_SIZE} />
+      <Ball ref={ballRef} size={GAME_CONSTANTS.BALL_SIZE} />
     </div>
   );
 };

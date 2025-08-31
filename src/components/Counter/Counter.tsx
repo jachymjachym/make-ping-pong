@@ -1,11 +1,12 @@
 import type { FC } from "react";
+import React from "react";
 import "./counter.css";
 
 export type CounterProps = {
   count: number;
 };
 
-export const Counter: FC<CounterProps> = ({ count }) => {
+export const Counter: FC<CounterProps> = React.memo(({ count }) => {
   return (
     <div
       className="counter"
@@ -15,4 +16,4 @@ export const Counter: FC<CounterProps> = ({ count }) => {
       {count}
     </div>
   );
-};
+});
