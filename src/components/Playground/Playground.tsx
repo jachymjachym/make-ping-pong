@@ -75,12 +75,13 @@ export const Playground: FC = () => {
       ballSpeedYRef.current = -ballSpeedYRef.current;
     }
 
-    // Left paddle collision detection
+    // Detect a collision with the left bat
     if (collidedWithLeftBat(ballPosition, { y: leftBatYPositionRef.current })) {
       // Reverse ball X direction
       ballSpeedXRef.current = -ballSpeedXRef.current;
       setCount((count) => count + 1);
 
+      // Increase speed every 10 points, max 40
       if ((count + 1) % 10 === 0 && count !== 0 && count < 40) {
         ballSpeedXRef.current += 2;
       }
@@ -89,7 +90,7 @@ export const Playground: FC = () => {
       ballSpeedYRef.current += Math.random() < 0.5 ? -1 : 1;
     }
 
-    // Right paddle collision detection
+    // Detect a collision with the right bat
     if (
       collidedWithRightBat(
         ballPosition,
@@ -109,7 +110,7 @@ export const Playground: FC = () => {
       ballSpeedYRef.current += Math.random() < 0.5 ? -1 : 1;
     }
 
-    // Check if ball went out of bounds (missed paddles)
+    // Check if ball went out of bounds
     if (isOutOfBoundaries(ballPosition, window.innerWidth)) {
       resetGame();
     }
@@ -128,7 +129,7 @@ export const Playground: FC = () => {
     leftBatYPositionRef.current += speedRef.current;
     rightBatYPositionRef.current += speedRef.current;
 
-    // Clamp both positions
+    // Bat position boundaries
     leftBatYPositionRef.current = Math.max(
       0,
       Math.min(
