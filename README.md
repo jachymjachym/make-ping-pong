@@ -30,6 +30,7 @@ Unfortunately, I wasn't able to come up with solution on the ball traces. My ide
 
 - Adding obstacles to the field for more difficult levels
 - playing against computer
+- possibility to play on touch device
 
 ## Thanks to the end
 
