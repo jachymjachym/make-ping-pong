@@ -2,4 +2,16 @@
   width: 100vw;
   height: 100vh;
   position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  outline: none;
+  background-color: #ffffff;
+}
+
+.player-name-input {
+  padding: 0.5rem;
+  border: none;
+  border-radius: 0.25rem;
+  font-size: 1rem;
 }

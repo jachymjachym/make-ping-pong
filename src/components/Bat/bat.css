@@ -1,8 +1,5 @@
 .bat {
-  --bat-width: 20px;
-  background-color: #ff009a;
-  height: 150px;
-  width: var(--bat-width);
-  border-radius: var(--bat-width);
+  background-color: var(--brand-color);
+  border-radius: 999px;
   position: absolute;
 }
